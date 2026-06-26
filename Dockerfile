@@ -29,3 +29,21 @@ RUN set -eux; \
       "https://dl.k8s.io/release/${KUBECTL_VERSION}/bin/linux/${kubectl_arch}/kubectl" && \
     chmod 0755 /usr/local/bin/kubectl && \
     kubectl version --client=true --output=yaml
+
+# opencode CLI — pinned, multi-arch via direct tarball from GitHub releases.
+# Avoids curl|sh; matches the kubectl install pattern. The tarball contains a
+# single `opencode` binary at the root.
+ARG TARGETARCH
+ARG OPENCODE_VERSION=v1.17.11
+RUN set -eux; \
+    case "${TARGETARCH:-amd64}" in \
+      amd64) oc_arch=x64 ;; \
+      arm64) oc_arch=arm64 ;; \
+      *) echo "unsupported TARGETARCH=${TARGETARCH}" >&2; exit 1; \
+    esac; \
+    curl -fsSL -o /tmp/opencode.tar.gz \
+      "https://github.com/anomalyco/opencode/releases/download/${OPENCODE_VERSION}/opencode-linux-${oc_arch}.tar.gz" && \
+    tar -xzf /tmp/opencode.tar.gz -C /tmp && \
+    install -m 0755 /tmp/opencode /usr/local/bin/opencode && \
+    rm -rf /tmp/opencode /tmp/opencode.tar.gz && \
+    opencode --version
