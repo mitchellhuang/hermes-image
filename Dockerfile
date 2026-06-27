@@ -47,3 +47,6 @@ RUN set -eux; \
     install -m 0755 /tmp/opencode /usr/local/bin/opencode && \
     rm -rf /tmp/opencode /tmp/opencode.tar.gz && \
     opencode --version
+
+# faster-whisper — local STT backend for voice message transcription via Hermes.
+RUN uv pip install --system faster-whisper
