@@ -49,4 +49,7 @@ RUN set -eux; \
     opencode --version
 
 # faster-whisper — local STT backend for voice message transcription via Hermes.
-RUN uv pip install --system faster-whisper
+# --break-system-packages bypasses PEP 668's externally-managed guard on the
+# base image's system Python (3.13); --system installs into that interpreter
+# rather than a venv so the hermes-agent runtime can import it directly.
+RUN uv pip install --system --break-system-packages faster-whisper
