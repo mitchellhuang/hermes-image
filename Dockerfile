@@ -1,4 +1,4 @@
-FROM nousresearch/hermes-agent
+FROM nousresearch/hermes-agent:v2026.7.1
 
 # gh CLI (GitHub CLI) — installed via upstream apt repo per official docs.
 # The Debian-community-packaged gh is broken on 2.45.x/2.46.x, so use the
@@ -34,7 +34,7 @@ RUN set -eux; \
 # Avoids curl|sh; matches the kubectl install pattern. The tarball contains a
 # single `opencode` binary at the root.
 ARG TARGETARCH
-ARG OPENCODE_VERSION=v1.17.11
+ARG OPENCODE_VERSION=v1.17.15
 RUN set -eux; \
     case "${TARGETARCH:-amd64}" in \
       amd64) oc_arch=x64 ;; \
