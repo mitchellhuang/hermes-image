@@ -19,6 +19,45 @@ RUN mkdir -p -m 755 /etc/apt/keyrings && \
     rm -rf /var/lib/apt/lists/* && \
     gh --version
 
+# 1Password CLI — pin the version and use 1Password's signed Debian
+# repository. The desktop application is intentionally not installed.
+ARG OP_VERSION=2.39.0-1
+RUN set -eux; \
+    op_arch=$(dpkg --print-architecture); \
+    case "${op_arch}" in \
+      amd64|arm64) ;; \
+      *) echo "unsupported dpkg architecture=${op_arch}" >&2; exit 1 ;; \
+    esac; \
+    apt-get update; \
+    apt-get install -y --no-install-recommends debsig-verify gnupg; \
+    mkdir -p -m 0755 /etc/apt/keyrings \
+      /etc/debsig/policies/AC2D62742012EA22 \
+      /usr/share/debsig/keyrings/AC2D62742012EA22; \
+    curl -fsSL -o /tmp/1password.asc \
+      https://downloads.1password.com/linux/keys/1password.asc; \
+    gpg --batch --with-colons --import-options show-only --import /tmp/1password.asc \
+      > /tmp/1password-key-info; \
+    test "$(awk -F: '$1 == "fpr" { print $10; exit }' /tmp/1password-key-info)" = \
+      3FEF9748469ADBE15DA7CA80AC2D62742012EA22; \
+    gpg --batch --dearmor --yes --output /etc/apt/keyrings/1password-archive-keyring.gpg \
+      /tmp/1password.asc; \
+    gpg --batch --dearmor --yes --output /usr/share/debsig/keyrings/AC2D62742012EA22/debsig.gpg \
+      /tmp/1password.asc; \
+    curl -fsSL -o /etc/debsig/policies/AC2D62742012EA22/1password.pol \
+      https://downloads.1password.com/linux/debian/debsig/1password.pol; \
+    printf '%s\n' \
+      "deb [arch=${op_arch} signed-by=/etc/apt/keyrings/1password-archive-keyring.gpg] https://downloads.1password.com/linux/debian/${op_arch} stable main" \
+      > /etc/apt/sources.list.d/1password.list; \
+    apt-get update; \
+    cd /tmp; \
+    apt-get download "1password-cli=${OP_VERSION}"; \
+    debsig-verify "/tmp/1password-cli-${OP_VERSION}.${op_arch}.deb"; \
+    apt-get install -y --no-install-recommends "/tmp/1password-cli-${OP_VERSION}.${op_arch}.deb"; \
+    rm -f /tmp/1password.asc /tmp/1password-key-info \
+      "/tmp/1password-cli-${OP_VERSION}.${op_arch}.deb"; \
+    rm -rf /var/lib/apt/lists/*; \
+    op --version
+
 # kubectl — pinned to a stable version. Multi-arch aware via TARGETARCH
 # (BuildKit auto-populates it).
 ARG TARGETARCH
