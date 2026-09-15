@@ -1,8 +1,8 @@
-FROM nousresearch/hermes-agent
+FROM nousresearch/hermes-agent:v2026.9.14
 
-# gh CLI (GitHub CLI) — installed via upstream apt repo per official docs.
-# The Debian-community-packaged gh is broken on 2.45.x/2.46.x, so use the
-# GitHub-maintained repo with the modern signed-by= keyring form.
+# gh CLI (GitHub CLI) — installed from the versioned package in the upstream
+# apt repository. The Debian-community-packaged gh is broken on 2.45.x/2.46.x,
+# so use the GitHub-maintained repo with the modern signed-by= keyring form.
 RUN mkdir -p -m 755 /etc/apt/keyrings && \
     out=$(mktemp) && \
     curl -fsSL -o "$out" https://cli.github.com/packages/githubcli-archive-keyring.gpg && \
@@ -11,14 +11,18 @@ RUN mkdir -p -m 755 /etc/apt/keyrings && \
     echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" \
       > /etc/apt/sources.list.d/github-cli.list && \
     apt-get update && \
-    apt-get install -y --no-install-recommends gh && \
+    gh_arch=$(dpkg --print-architecture) && \
+    curl -fsSL -o /tmp/gh.deb \
+      "https://cli.github.com/packages/pool/main/g/gh/gh_2.99.0_${gh_arch}.deb" && \
+    apt-get install -y --no-install-recommends /tmp/gh.deb && \
+    rm -f /tmp/gh.deb && \
     rm -rf /var/lib/apt/lists/* && \
     gh --version
 
 # kubectl — pinned to a stable version. Multi-arch aware via TARGETARCH
 # (BuildKit auto-populates it).
 ARG TARGETARCH
-ARG KUBECTL_VERSION=v1.36.2
+ARG KUBECTL_VERSION=v1.36.4
 RUN set -eux; \
     case "${TARGETARCH:-amd64}" in \
       amd64) kubectl_arch=amd64 ;; \
@@ -33,8 +37,7 @@ RUN set -eux; \
 # opencode CLI — pinned, multi-arch via direct tarball from GitHub releases.
 # Avoids curl|sh; matches the kubectl install pattern. The tarball contains a
 # single `opencode` binary at the root.
-ARG TARGETARCH
-ARG OPENCODE_VERSION=v1.17.11
+ARG OPENCODE_VERSION=v1.18.27
 RUN set -eux; \
     case "${TARGETARCH:-amd64}" in \
       amd64) oc_arch=x64 ;; \
@@ -52,4 +55,4 @@ RUN set -eux; \
 # --break-system-packages bypasses PEP 668's externally-managed guard on the
 # base image's system Python (3.13); --system installs into that interpreter
 # rather than a venv so the hermes-agent runtime can import it directly.
-RUN uv pip install --system --break-system-packages faster-whisper
+RUN uv pip install --system --break-system-packages faster-whisper==1.2.1

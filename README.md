@@ -1,7 +1,7 @@
 # hermes-image
 
 Custom hermes-agent image with `gh` (GitHub CLI), `kubectl`, and `opencode`
-added on top of `nousresearch/hermes-agent`.
+added on top of `nousresearch/hermes-agent:v2026.9.14`.
 
 ## Build
 
@@ -23,6 +23,7 @@ docker build -t hermes-image .
 
 | Tool | Version | Source |
 |------|---------|--------|
-| gh | latest (apt repo) | https://cli.github.com/packages |
-| kubectl | v1.36.2 | https://dl.k8s.io |
-| opencode | v1.17.11 | https://github.com/anomalyco/opencode/releases |
+| gh | 2.99.0 (apt repo) | https://cli.github.com/packages |
+| kubectl | v1.36.4 | https://dl.k8s.io |
+| opencode | v1.18.27 | https://github.com/anomalyco/opencode/releases |
+| faster-whisper | 1.2.1 | PyPI |
