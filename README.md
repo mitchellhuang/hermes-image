@@ -1,7 +1,7 @@
 # hermes-image
 
 Custom hermes-agent image with `gh` (GitHub CLI), `kubectl`, and `opencode`
-added on top of `nousresearch/hermes-agent:v2026.9.14`.
+added on top of `nousresearch/hermes-agent:v2026.9.24`.
 
 ## Build
 
