@@ -34,10 +34,9 @@ RUN set -eux; \
     chmod 0755 /usr/local/bin/kubectl && \
     kubectl version --client=true --output=yaml
 
-# opencode CLI — pinned, multi-arch via direct tarball from GitHub releases.
-# Avoids curl|sh; matches the kubectl install pattern. The tarball contains a
-# single `opencode` binary at the root.
-ARG OPENCODE_VERSION=v1.18.27
+# opencode CLI V2 — pinned, multi-arch via the official npm native tarball.
+# The tarball contains the binary at package/bin/opencode.
+ARG OPENCODE_VERSION=2.0.20
 RUN set -eux; \
     case "${TARGETARCH:-amd64}" in \
       amd64) oc_arch=x64 ;; \
@@ -45,11 +44,32 @@ RUN set -eux; \
       *) echo "unsupported TARGETARCH=${TARGETARCH}" >&2; exit 1; \
     esac; \
     curl -fsSL -o /tmp/opencode.tar.gz \
-      "https://github.com/anomalyco/opencode/releases/download/${OPENCODE_VERSION}/opencode-linux-${oc_arch}.tar.gz" && \
-    tar -xzf /tmp/opencode.tar.gz -C /tmp && \
-    install -m 0755 /tmp/opencode /usr/local/bin/opencode && \
-    rm -rf /tmp/opencode /tmp/opencode.tar.gz && \
+      "https://registry.npmjs.org/@opencode/cli-linux-${oc_arch}/-/cli-linux-${oc_arch}-${OPENCODE_VERSION}.tgz" && \
+    tar -xzf /tmp/opencode.tar.gz -C /tmp package/bin/opencode && \
+    install -m 0755 /tmp/package/bin/opencode /usr/local/bin/opencode && \
+    rm -rf /tmp/package /tmp/opencode.tar.gz && \
     opencode --version
+
+# Flux CLI — pinned, multi-arch via official GitHub release archives. Verify
+# the downloaded archive against the release's official SHA256 checksums.
+ARG FLUX_VERSION=v2.9.5
+RUN set -eux; \
+    case "${TARGETARCH:-amd64}" in \
+      amd64) flux_arch=amd64 ;; \
+      arm64) flux_arch=arm64 ;; \
+      *) echo "unsupported TARGETARCH=${TARGETARCH}" >&2; exit 1; \
+    esac; \
+    flux_archive="flux_${FLUX_VERSION#v}_linux_${flux_arch}.tar.gz"; \
+    tmpdir=$(mktemp -d); \
+    curl -fsSL -o "${tmpdir}/${flux_archive}" \
+      "https://github.com/fluxcd/flux2/releases/download/${FLUX_VERSION}/${flux_archive}"; \
+    curl -fsSL -o "${tmpdir}/flux_checksums.txt" \
+      "https://github.com/fluxcd/flux2/releases/download/${FLUX_VERSION}/flux_${FLUX_VERSION#v}_checksums.txt"; \
+    (cd "${tmpdir}" && sha256sum --ignore-missing --check flux_checksums.txt); \
+    tar -xzf "${tmpdir}/${flux_archive}" -C "${tmpdir}" flux; \
+    install -m 0755 "${tmpdir}/flux" /usr/local/bin/flux; \
+    rm -rf "${tmpdir}"; \
+    flux --version
 
 # faster-whisper — local STT backend for voice message transcription via Hermes.
 # --break-system-packages bypasses PEP 668's externally-managed guard on the
