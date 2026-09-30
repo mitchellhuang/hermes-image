@@ -1,4 +1,4 @@
-FROM nousresearch/hermes-agent:v2026.9.14
+FROM nousresearch/hermes-agent:v2026.9.24
 
 # gh CLI (GitHub CLI) — installed from the versioned package in the upstream
 # apt repository. The Debian-community-packaged gh is broken on 2.45.x/2.46.x,
