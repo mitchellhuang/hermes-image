@@ -1,0 +1,34 @@
+#!/bin/sh
+set -eu
+
+[ "$(id -u)" -eq 1000 ]
+[ "$HOME" = /home/vscode ]
+[ -w /workspace ]
+[ -w "$HOME" ]
+[ -x /usr/bin/tini ]
+
+for command in git gh ssh curl jq rg fd gcc g++ make cmake gdb unzip zip ps sudo zsh \
+    python3 node npm bun go kubectl helm uv flux opencode shellcheck sqlite3 \
+    dig nc lsof; do
+    command -v "$command" >/dev/null
+done
+
+gh --version >/dev/null
+kubectl version --client=true --output=yaml >/dev/null
+opencode --version >/dev/null
+flux --version >/dev/null
+node --version >/dev/null
+npm --version >/dev/null
+bun --version >/dev/null
+go version >/dev/null
+uv --version >/dev/null
+helm version --short >/dev/null
+python3 -m pip --version >/dev/null
+rg --version >/dev/null
+fd --version >/dev/null
+
+touch /workspace/.image-smoke-test
+rm /workspace/.image-smoke-test
+mkdir -p "$HOME/.cache/image-smoke-test"
+rmdir "$HOME/.cache/image-smoke-test"
+printf 'tool smoke test passed (%s, uid %s)\n' "$(uname -m)" "$(id -u)"

@@ -1,30 +1,47 @@
-# hermes-image
+# opencode-image
 
-Custom hermes-agent image with `gh` (GitHub CLI), `kubectl`, `opencode`, and
-`flux` added on top of `nousresearch/hermes-agent:v2026.9.24`.
+A multi-architecture (amd64 and arm64) OpenCode V2 development image based on
+the pinned Ubuntu 24.04 devcontainers base. It runs as the non-root `vscode`
+user (uid 1000), with `/workspace` as the working directory and OpenCode's
+server listening on port 4096 by default.
 
-## Build
+The image contains no baked credentials or authentication configuration. Use
+OpenCode V2's supported runtime authentication flow; do not assume V1 server
+environment variables configure V2 authentication. In runtime smoke testing,
+unauthenticated `GET /api/health` returned HTTP 401, so probes must account for
+V2 authentication. OpenCode startup status is emitted unmodified on stdout; this
+image does not provision credentials or redact runtime logs. Persist
+`/home/vscode` for user configuration and caches, and mount project files at
+`/workspace`.
 
-Push a `v*` tag to trigger a multi-arch (amd64 + arm64) build that publishes to
-`ghcr.io/<owner>/hermes-image`.
+## Build and run
 
-```bash
-git tag v0.1.0
-git push origin v0.1.0
+Push a `v*` tag to build and publish to `ghcr.io/<owner>/opencode-image`.
+The image build runs a tool and non-root filesystem smoke test before publish.
+
+```sh
+docker build -t opencode-image .
+docker run --rm -p 4096:4096 -v "$PWD:/workspace" opencode-image
 ```
 
-Manual build:
+Override the default command by appending a command to `docker run`, for
+example `docker run --rm opencode-image opencode --version`.
 
-```bash
-docker build -t hermes-image .
-```
+## Included tools
 
-## Versions
+The pinned devcontainers base supplies Ubuntu 24.04, git, ssh, curl, jq, gcc,
+g++, make, unzip, zip, procps, sudo, and zsh. This image adds:
 
 | Tool | Version | Source |
 |------|---------|--------|
-| gh | 2.99.0 (apt repo) | https://cli.github.com/packages |
-| kubectl | v1.36.4 | https://dl.k8s.io |
-| opencode | V2 2.0.20 | https://registry.npmjs.org/@opencode/cli-linux-{x64,arm64} |
-| flux | v2.9.5 | https://github.com/fluxcd/flux2/releases (SHA256-verified against release checksums) |
-| faster-whisper | 1.2.1 | PyPI |
+| GitHub CLI (`gh`) | 2.99.0 | GitHub CLI package |
+| kubectl | v1.36.4 | Kubernetes release (SHA256 verified) |
+| OpenCode | V2 2.0.20 | Architecture-specific npm package (SHA512 verified) |
+| Flux CLI | v2.9.5 | Flux release (SHA256 verified) |
+| Node.js / npm | 24.21.0 | Node.js release (SHA256 verified) |
+| Bun | 1.4.2 | Bun release (SHA256 verified) |
+| Go | 1.27.1 | Go release (pinned SHA256) |
+| uv | 0.12.21 | uv release (SHA256 verified) |
+| Helm | 4.3.0 | Helm release (SHA256 verified) |
+| Python | Ubuntu 24.04 package | `python3`, pip, and venv |
+| Additional utilities | Ubuntu 24.04 packages | ripgrep, fd, cmake, gdb, shellcheck, sqlite3, dnsutils, netcat, lsof |
